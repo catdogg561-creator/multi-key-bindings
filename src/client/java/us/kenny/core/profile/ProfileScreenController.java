@@ -28,7 +28,7 @@ public final class ProfileScreenController {
     private static boolean skipVisibilityResetOnNextEnter = false;
 
     private final Screen owner;
-    private final Supplier<Screen> screenRebuilder;
+    private final Supplier<KeyBindsScreen> screenRebuilder;
     private final boolean anchorPopupAtButtonBottom;
 
     private Button visibilityButton;
@@ -38,18 +38,24 @@ public final class ProfileScreenController {
     /**
      * Create a controller bound to a specific Key Binds screen instance.
      *
-     * @param owner                     The screen this controller is attached
-     *                                  to. Must be a KeyBindsScreen or subclass
-     *                                  for Manage-Profiles navigation to work.
+     * @param owner                     The already-initialized screen the
+     *                                  controller is attached to. Used as the
+     *                                  parent (backdrop + cancel target) for
+     *                                  overlay dialogs, which render their
+     *                                  parent's extractRenderState — passing an
+     *                                  uninitialized screen there would NPE.
      * @param screenRebuilder           Produces a fresh instance of the owner
-     *                                  screen for post-swap navigation.
+     *                                  screen. Used for every post-profile-
+     *                                  change navigation so the new screen
+     *                                  runs a fresh init against the current
+     *                                  profile state.
      * @param anchorPopupAtButtonBottom If true, anchor the popup's bottom edge
      *                                  at the dropdown button's bottom;
      *                                  otherwise at its top. Vanilla anchors at
      *                                  top (popup floats above the button);
      *                                  Controlling anchors at bottom.
      */
-    public ProfileScreenController(Screen owner, Supplier<Screen> screenRebuilder,
+    public ProfileScreenController(Screen owner, Supplier<KeyBindsScreen> screenRebuilder,
             boolean anchorPopupAtButtonBottom) {
         this.owner = owner;
         this.screenRebuilder = screenRebuilder;
@@ -161,13 +167,13 @@ public final class ProfileScreenController {
                 "",
                 name -> {
                     ProfileManager.create(name);
-                    Minecraft.getInstance().setScreenAndShow(owner);
+                    Minecraft.getInstance().setScreenAndShow(screenRebuilder.get());
                 }));
     }
 
     private void openManageProfiles() {
         popup = null;
-        Minecraft.getInstance().setScreenAndShow(new ManageProfilesScreen((KeyBindsScreen) owner));
+        Minecraft.getInstance().setScreenAndShow(new ManageProfilesScreen(screenRebuilder));
     }
 
     private static Component dropdownLabel() {

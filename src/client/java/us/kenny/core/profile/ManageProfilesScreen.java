@@ -12,13 +12,13 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
 import us.kenny.ProfileManager;
-import us.kenny.mixin.OptionsSubScreenAccessor;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.attribute.FileTime;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.function.Supplier;
 
 /**
  * Vanilla-style manager modelled on the Select World screen: a scrollable
@@ -33,16 +33,22 @@ public final class ManageProfilesScreen extends Screen {
 
     private static final int ACTIVE_BADGE_COLOR = 0xFF77CC77;
 
-    private final KeyBindsScreen parent;
+    /**
+     * Supplies a fresh KeyBindsScreen instance for every navigation away
+     * from this screen. Held as a supplier (not a cached instance) because
+     * OptionsSubScreen suppresses re-init on re-show, so returning to a
+     * cached parent would show stale widgets after a profile change.
+     */
+    private final Supplier<KeyBindsScreen> parentSupplier;
     private ProfileList list;
     private Button setActiveButton;
     private Button renameButton;
     private Button duplicateButton;
     private Button deleteButton;
 
-    public ManageProfilesScreen(KeyBindsScreen parent) {
+    public ManageProfilesScreen(Supplier<KeyBindsScreen> parentSupplier) {
         super(Component.translatable("multi.profile.manage.title"));
-        this.parent = parent;
+        this.parentSupplier = parentSupplier;
     }
 
     @Override
@@ -79,7 +85,7 @@ public final class ManageProfilesScreen extends Screen {
         addRenderableWidget(this.deleteButton);
         addRenderableWidget(Button.builder(
                 Component.translatable("multi.profile.manage.back"),
-                b -> Minecraft.getInstance().setScreenAndShow(parent))
+                b -> Minecraft.getInstance().setScreenAndShow(parentSupplier.get()))
                 .bounds(cx + 79, bottomRowY, NARROW_BUTTON_WIDTH, 20).build());
 
         refreshActionButtons();
@@ -102,11 +108,7 @@ public final class ManageProfilesScreen extends Screen {
             return;
         }
         ProfileManager.load(sel.name);
-        // Stay on the same screen but rebuild against a fresh KeyBindsScreen so that
-        // Back returns to a screen reflecting the new active profile.
-        OptionsSubScreenAccessor accessor = (OptionsSubScreenAccessor) (Object) parent;
-        KeyBindsScreen freshParent = new KeyBindsScreen(accessor.getLastScreen(), accessor.getOptions());
-        Minecraft.getInstance().setScreenAndShow(new ManageProfilesScreen(freshParent));
+        Minecraft.getInstance().setScreenAndShow(new ManageProfilesScreen(parentSupplier));
     }
 
     private void openNewDialog() {
@@ -117,7 +119,7 @@ public final class ManageProfilesScreen extends Screen {
                 "",
                 name -> {
                     ProfileManager.create(name);
-                    Minecraft.getInstance().setScreenAndShow(new ManageProfilesScreen(parent));
+                    Minecraft.getInstance().setScreenAndShow(new ManageProfilesScreen(parentSupplier));
                 }));
     }
 
@@ -134,7 +136,7 @@ public final class ManageProfilesScreen extends Screen {
                 currentName,
                 newName -> {
                     ProfileManager.rename(currentName, newName);
-                    Minecraft.getInstance().setScreenAndShow(new ManageProfilesScreen(parent));
+                    Minecraft.getInstance().setScreenAndShow(new ManageProfilesScreen(parentSupplier));
                 }));
     }
 
@@ -144,7 +146,7 @@ public final class ManageProfilesScreen extends Screen {
             return;
         }
         ProfileManager.duplicate(sel.name, null);
-        Minecraft.getInstance().setScreenAndShow(new ManageProfilesScreen(parent));
+        Minecraft.getInstance().setScreenAndShow(new ManageProfilesScreen(parentSupplier));
     }
 
     private void onDelete() {
@@ -158,7 +160,7 @@ public final class ManageProfilesScreen extends Screen {
                     if (confirmed) {
                         ProfileManager.delete(name);
                     }
-                    Minecraft.getInstance().setScreenAndShow(new ManageProfilesScreen(parent));
+                    Minecraft.getInstance().setScreenAndShow(new ManageProfilesScreen(parentSupplier));
                 },
                 Component.translatable("multi.profile.manage.confirm_delete.title", name),
                 Component.translatable("multi.profile.manage.confirm_delete.body")));
@@ -173,7 +175,7 @@ public final class ManageProfilesScreen extends Screen {
 
     @Override
     public void onClose() {
-        Minecraft.getInstance().setScreenAndShow(parent);
+        Minecraft.getInstance().setScreenAndShow(parentSupplier.get());
     }
 
     private static String readModifiedDate(String name) {
