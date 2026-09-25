@@ -1,31 +1,31 @@
 {
   "schemaVersion": 1,
-  "id": "multi-key-bindings",
+  "id": "better-colors",
   "version": "${version}",
-  "name": "Multi Key Bindings",
-  "description": "Allows players to create multiple keybindings for the same action/function.",
+  "name": "better-colors",
+  "description": "Allows players to create better colors for the same action/function.",
   "authors": ["kennybc"],
   "contact": {
     "homepage": "https://fabricmc.net/",
     "sources": "https://github.com/FabricMC/fabric-example-mod"
   },
   "license": "CC0-1.0",
-  "icon": "assets/multi-key-bindings/icon.png",
+  "icon": "assets/better-colors/icon.png",
   "environment": "*",
   "entrypoints": {
     "client": ["us.kenny.MultiKeyBindingClient"]
   },
   "mixins": [
     {
-      "config": "multi-key-bindings.controlling.mixins.json",
+      "config": "better-colors.controlling.mixins.json",
       "environment": "client"
     },
     {
-      "config": "multi-key-bindings.mixins.json",
+      "config": "better-colors.mixins.json",
       "environment": "client"
     }
   ],
-  "accessWidener": "multi-key-bindings.accesswidener",
+  "accessWidener": "better-colors.accesswidener",
   "depends": {
     "fabricloader": ">=0.19.3",
     "minecraft": "~26.3",
